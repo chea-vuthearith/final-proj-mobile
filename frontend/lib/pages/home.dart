@@ -274,6 +274,7 @@ class _HomePageState extends State<HomePage> {
   String _formatScheduleTime(Map<String, dynamic>? schedule) {
     if (schedule == null) return "";
     final dtstart = schedule['dtstart'] as String?;
+    final dtend = schedule['dtend'] as String?;
     final rrule = schedule['rrule'] as String?;
     if (dtstart == null || rrule == null) return "";
 
@@ -284,6 +285,18 @@ class _HomePageState extends State<HomePage> {
     final displayStartHour = startHour > 12
         ? startHour - 12
         : (startHour == 0 ? 12 : startHour);
+
+    String endTimeStr = "";
+    if (dtend != null) {
+      final endParts = dtend.split('T')[1].split(':');
+      final endHour = int.parse(endParts[0]);
+      final endMin = endParts[1];
+      final endPeriod = endHour >= 12 ? 'PM' : 'AM';
+      final displayEndHour = endHour > 12
+          ? endHour - 12
+          : (endHour == 0 ? 12 : endHour);
+      endTimeStr = ' - $displayEndHour:$endMin $endPeriod';
+    }
 
     final dayMatch = RegExp(r'BYDAY=([^;]+)').firstMatch(rrule);
     final daysCode = dayMatch?.group(1)?.split(',') ?? [];
@@ -307,7 +320,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    return '${dayNames.join(", ")} $displayStartHour:$startMin $startPeriod';
+    return '${dayNames.join(", ")} $displayStartHour:$startMin $startPeriod$endTimeStr';
   }
 
   void _showAnnouncement(Map<String, dynamic> announcement) {
