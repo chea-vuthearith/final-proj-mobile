@@ -82,12 +82,14 @@ class _HomePageState extends State<HomePage> {
                         ? const Text("No classes today")
                         : Column(
                             children: _classes
-                                .map((c) => _classTile(
-                                      c['name'] ?? '',
-                                      c['schedule']?['dtstart'] ?? '',
-                                      c['location'] ?? '',
-                                      c['prof']?['name'] ?? '',
-                                    ))
+                                .map(
+                                  (c) => _classTile(
+                                    c['name'] ?? '',
+                                    c['schedule']?['dtstart'] ?? '',
+                                    c['location'] ?? '',
+                                    c['prof']?['name'] ?? '',
+                                  ),
+                                )
                                 .toList(),
                           ),
                   ),
@@ -96,11 +98,25 @@ class _HomePageState extends State<HomePage> {
                     title: "Announcements",
                     child: _announcements.isEmpty
                         ? const Text("No announcements")
-                        : ListTile(
-                            leading: const Icon(Icons.circle, size: 10, color: Colors.red),
-                            title: Text(_announcements.first['title'] ?? ''),
-                            subtitle: Text(_announcements.first['content'] ?? ''),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                        : Column(
+                            children: _announcements
+                                .map(
+                                  (a) => ListTile(
+                                    leading: const Icon(
+                                      Icons.circle,
+                                      size: 10,
+                                      color: Colors.red,
+                                    ),
+                                    title: Text(a['title'] ?? ''),
+                                    subtitle: Text(a['content'] ?? ''),
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 14,
+                                    ),
+                                    onTap: () => _showAnnouncement(a),
+                                  ),
+                                )
+                                .toList(),
                           ),
                   ),
                   const SizedBox(height: 20),
@@ -165,7 +181,26 @@ class _HomePageState extends State<HomePage> {
               color: const Color(0xFF4FB6A6).withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text("Now", style: TextStyle(color: Color(0xFF4FB6A6))),
+            child: const Text(
+              "Now",
+              style: TextStyle(color: Color(0xFF4FB6A6)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAnnouncement(Map<String, dynamic> announcement) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(announcement['title'] ?? ''),
+        content: Text(announcement['content'] ?? ''),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close"),
           ),
         ],
       ),
