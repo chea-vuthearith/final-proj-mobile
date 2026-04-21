@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -8,14 +9,36 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int index = 0;
+  final ApiService _api = ApiService();
+  List<dynamic> _classes = [];
+  List<dynamic> _announcements = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final classes = await _api.getClasses();
+      final announcements = await _api.getAnnouncements();
+      setState(() {
+        _classes = classes;
+        _announcements = announcements;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: index,
-        onTap: (i) => setState(() => index = i),
+        currentIndex: 0,
         selectedItemColor: const Color(0xFF4FB6A6),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
@@ -34,77 +57,66 @@ class _HomePageState extends State<HomePage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: ListView(
-          children: [
-            const SizedBox(height: 20),
-
-            const Text(
-              "Good morning,",
-              style: TextStyle(fontSize: 18, color: Colors.black54),
-            ),
-            const Text(
-              "Richard",
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 5),
-            const Text(
-              "Tuesday, March 24",
-              style: TextStyle(color: Colors.black45),
-            ),
-
-            const SizedBox(height: 25),
-
-            _card(
-              title: "Today's Classes",
-              child: Column(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
                 children: [
-                  _classTile(
-                    "Calculus II",
-                    "10:00 - 11:45 AM",
-                    "Room 202 • Prof. Smith",
-                    "Now",
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Good morning,",
+                    style: TextStyle(fontSize: 18, color: Colors.black54),
                   ),
-                  const Divider(),
-                  _classTile(
-                    "Operating System",
-                    "12:00 - 01:30 PM",
-                    "Room D4 • Dr. Adams",
-                    "In 2h",
+                  const Text(
+                    "Student",
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Tuesday, March 24",
+                    style: TextStyle(color: Colors.black45),
+                  ),
+                  const SizedBox(height: 25),
+                  _card(
+                    title: "Today's Classes",
+                    child: _classes.isEmpty
+                        ? const Text("No classes today")
+                        : Column(
+                            children: _classes
+                                .map((c) => _classTile(
+                                      c['name'] ?? '',
+                                      c['schedule']?['dtstart'] ?? '',
+                                      c['location'] ?? '',
+                                      c['prof']?['name'] ?? '',
+                                    ))
+                                .toList(),
+                          ),
+                  ),
+                  const SizedBox(height: 20),
+                  _card(
+                    title: "Announcements",
+                    child: _announcements.isEmpty
+                        ? const Text("No announcements")
+                        : ListTile(
+                            leading: const Icon(Icons.circle, size: 10, color: Colors.red),
+                            title: Text(_announcements.first['title'] ?? ''),
+                            subtitle: Text(_announcements.first['content'] ?? ''),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                          ),
+                  ),
+                  const SizedBox(height: 20),
+                  _card(
+                    title: "Quick Actions",
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: const [
+                        _quickAction(Icons.calendar_month, "My Schedule"),
+                        _quickAction(Icons.map, "Campus Map"),
+                        _quickAction(Icons.chat_bubble, "Messages"),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _card(
-              title: "Announcements",
-              child: ListTile(
-                leading: const Icon(Icons.circle, size: 10, color: Colors.red),
-                title: const Text("School Operations"),
-                subtitle: const Text(
-                  "Updated hours at the library this week...",
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _card(
-              title: "Quick Actions",
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: const [
-                  _quickAction(Icons.calendar_month, "My Schedule"),
-                  _quickAction(Icons.map, "Campus Map"),
-                  _quickAction(Icons.chat_bubble, "Messages"),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -133,27 +145,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _classTile(String title, String time, String room, String tag) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(time, style: const TextStyle(color: Colors.black54)),
-            Text(room, style: const TextStyle(color: Colors.black45)),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF4FB6A6).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
+  Widget _classTile(String title, String time, String location, String prof) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(location, style: const TextStyle(color: Colors.black54)),
+              Text(prof, style: const TextStyle(color: Colors.black45)),
+            ],
           ),
-          child: Text(tag, style: const TextStyle(color: Color(0xFF4FB6A6))),
-        ),
-      ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4FB6A6).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text("Now", style: TextStyle(color: Color(0xFF4FB6A6))),
+          ),
+        ],
+      ),
     );
   }
 }
