@@ -76,10 +76,7 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    dateStr,
-                    style: const TextStyle(color: Colors.black45),
-                  ),
+                  Text(dateStr, style: const TextStyle(color: Colors.black45)),
                   const SizedBox(height: 25),
                   _card(
                     title: "Today's Classes",
@@ -90,7 +87,7 @@ class _HomePageState extends State<HomePage> {
                                 .map(
                                   (c) => _classTile(
                                     c['name'] ?? '',
-                                    c['schedule']?['dtstart'] ?? '',
+                                    c['schedule'],
                                     c['location'] ?? '',
                                     c['prof']?['name'] ?? '',
                                   ),
@@ -166,7 +163,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _classTile(String title, String time, String location, String prof) {
+  Widget _classTile(
+    String title,
+    Map<String, dynamic>? schedule,
+    String location,
+    String prof,
+  ) {
+    final now = DateTime.now();
+    final relativeTime = _getRelativeClassTime(schedule, now);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -178,6 +183,10 @@ class _HomePageState extends State<HomePage> {
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(location, style: const TextStyle(color: Colors.black54)),
               Text(prof, style: const TextStyle(color: Colors.black45)),
+              Text(
+                _formatScheduleTime(schedule),
+                style: const TextStyle(color: Colors.black38),
+              ),
             ],
           ),
           Container(
@@ -186,14 +195,119 @@ class _HomePageState extends State<HomePage> {
               color: const Color(0xFF4FB6A6).withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              "Now",
-              style: TextStyle(color: Color(0xFF4FB6A6)),
+            child: Text(
+              relativeTime,
+              style: const TextStyle(color: Color(0xFF4FB6A6)),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getRelativeClassTime(Map<String, dynamic>? schedule, DateTime now) {
+    if (schedule == null) return "";
+    final dtstart = schedule['dtstart'] as String?;
+    final rrule = schedule['rrule'] as String?;
+    final dtend = schedule['dtend'] as String?;
+    if (dtstart == null || rrule == null) return "";
+
+    final dayMatch = RegExp(r'BYDAY=([^;]+)').firstMatch(rrule);
+    final daysCode = dayMatch?.group(1)?.split(',') ?? [];
+
+    final dayMap = {
+      'MO': DateTime.monday,
+      'TU': DateTime.tuesday,
+      'WE': DateTime.wednesday,
+      'TH': DateTime.thursday,
+      'FR': DateTime.friday,
+      'SA': DateTime.saturday,
+      'SU': DateTime.sunday,
+    };
+
+    DateTime? nextClass;
+    for (int i = 0; i < 7; i++) {
+      final checkDay = now.add(Duration(days: i));
+      final checkWeekday = checkDay.weekday;
+      for (final d in daysCode) {
+        if (dayMap[d] == checkWeekday) {
+          final startTime = DateTime.parse(dtstart.replaceAll('Z', ''));
+          nextClass = DateTime(
+            checkDay.year,
+            checkDay.month,
+            checkDay.day,
+            startTime.hour,
+            startTime.minute,
+          );
+          break;
+        }
+      }
+      if (nextClass != null) break;
+    }
+
+    if (nextClass == null) return "";
+
+    final diff = nextClass.difference(now);
+    final diffMins = diff.inMinutes;
+
+    if (diffMins < 0) {
+      if (dtend != null) {
+        final endTime = DateTime.parse(dtend.replaceAll('Z', ''));
+        final classEnd = DateTime(
+          nextClass.year,
+          nextClass.month,
+          nextClass.day,
+          endTime.hour,
+          endTime.minute,
+        );
+        if (now.isBefore(classEnd)) return "Now";
+      }
+      return "Ended";
+    }
+    if (diffMins < 60) return "in ${diffMins}m";
+    final diffHours = (diffMins / 60).floor();
+    if (diffHours < 24) return "in ${diffHours}h";
+    final diffDays = (diffMins / (60 * 24)).floor();
+    return "in ${diffDays}d";
+  }
+
+  String _formatScheduleTime(Map<String, dynamic>? schedule) {
+    if (schedule == null) return "";
+    final dtstart = schedule['dtstart'] as String?;
+    final rrule = schedule['rrule'] as String?;
+    if (dtstart == null || rrule == null) return "";
+
+    final startParts = dtstart.split('T')[1].split(':');
+    final startHour = int.parse(startParts[0]);
+    final startMin = startParts[1];
+    final startPeriod = startHour >= 12 ? 'PM' : 'AM';
+    final displayStartHour = startHour > 12
+        ? startHour - 12
+        : (startHour == 0 ? 12 : startHour);
+
+    final dayMatch = RegExp(r'BYDAY=([^;]+)').firstMatch(rrule);
+    final daysCode = dayMatch?.group(1)?.split(',') ?? [];
+    final dayNames = <String>[];
+    for (final d in daysCode) {
+      switch (d) {
+        case 'MO':
+          dayNames.add('Mon');
+        case 'TU':
+          dayNames.add('Tue');
+        case 'WE':
+          dayNames.add('Wed');
+        case 'TH':
+          dayNames.add('Thu');
+        case 'FR':
+          dayNames.add('Fri');
+        case 'SA':
+          dayNames.add('Sat');
+        case 'SU':
+          dayNames.add('Sun');
+      }
+    }
+
+    return '${dayNames.join(", ")} $displayStartHour:$startMin $startPeriod';
   }
 
   void _showAnnouncement(Map<String, dynamic> announcement) {
