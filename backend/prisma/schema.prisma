@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teachingClasses Class[]
+  chatParticipants ChatParticipant[]
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  name      String
+  desc     String
+  profId   String
+  prof     User     @relation(fields: [profId], references: [id])
+  schedule Json
+  location String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chats    Chat[]
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Chat {
+  id        String   @id @default(cuid())
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ChatParticipant[]
+  messages    ChatMessage[]
+}
+
+model ChatParticipant {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat     Chat    @relation(fields: [chatId], references: [id])
+  userId   String
+  user     User    @relation(fields: [userId], references: [id])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat     Chat    @relation(fields: [chatId], references: [id])
+  time     DateTime @default(now())
+  from     String
+  message  String
+}
+
+model MenuItem {
+  id        String   @id @default(cuid())
+  name     String
+  picture  String?
+  price    Float
+  qty      Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  items         Json
+  extraRequests String?
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: school_postgres
+    environment:
+      POSTGRES_USER: school_connect
+      POSTGRES_PASSWORD: school_connect
+      POSTGRES_DB: school_connect
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U school_connect"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: school_api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://school_connect:school_connect@postgres:5432/school_connect
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+volumes:
+  postgres_data:
+
