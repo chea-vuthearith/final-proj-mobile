@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/api.dart';
 
 class HomePage extends StatefulWidget {
@@ -36,6 +37,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final greeting = _getGreeting(now.hour);
+    final dateStr = DateFormat('EEEE, MMMM d').format(now);
+
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
@@ -62,18 +67,18 @@ class _HomePageState extends State<HomePage> {
             : ListView(
                 children: [
                   const SizedBox(height: 20),
-                  const Text(
-                    "Good morning,",
-                    style: TextStyle(fontSize: 18, color: Colors.black54),
+                  Text(
+                    greeting,
+                    style: const TextStyle(fontSize: 18, color: Colors.black54),
                   ),
                   const Text(
                     "Student",
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 5),
-                  const Text(
-                    "Tuesday, March 24",
-                    style: TextStyle(color: Colors.black45),
+                  Text(
+                    dateStr,
+                    style: const TextStyle(color: Colors.black45),
                   ),
                   const SizedBox(height: 25),
                   _card(
@@ -205,6 +210,12 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  String _getGreeting(int hour) {
+    if (hour < 12) return "Good morning,";
+    if (hour < 17) return "Good afternoon,";
+    return "Good evening,";
   }
 }
 

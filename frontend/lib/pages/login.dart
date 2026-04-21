@@ -22,22 +22,24 @@ class LoginPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                const Text(
-                  "UniHelper",
-                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
-                ),
-                const Text(
-                  "University Assistance App",
-                  style: TextStyle(color: Colors.black54),
+                const Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        "Welcome to UniHelper",
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "Please login to continue",
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 40),
-
-                const Text(
-                  "Welcome",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const Text("Please login to continue"),
-                const SizedBox(height: 30),
 
                 TextField(
                   decoration: InputDecoration(
